@@ -1,0 +1,21 @@
+﻿// This script will help you update user roles
+// You need to run this in Firebase Console or via Firestore
+
+/*
+To fix the roles, go to Firebase Console:
+1. https://console.firebase.google.com/project/civiclens-d2056/firestore/data
+2. Navigate to 'users' collection
+3. Find the documents for each user and update their role:
+
+For roads@civiclens.com:
+- Find the document with email = "roads@civiclens.com"
+- Update field "role" to "official"
+- Add field "department" to "Roads"
+
+For admin@civiclens.com:
+- Find the document with email = "admin@civiclens.com"
+- Update field "role" to "admin"
+
+For citizen@civiclens.com:
+- Already correct (role = "citizen")
+*/

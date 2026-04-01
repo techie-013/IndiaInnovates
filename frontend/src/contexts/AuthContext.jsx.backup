@@ -1,0 +1,183 @@
+﻿import React, { createContext, useState, useEffect, useContext } from 'react';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile
+} from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase';
+import toast from 'react-hot-toast';
+
+export const AuthContext = createContext();
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState(null);
+  const [userDepartment, setUserDepartment] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          const userData = userDoc.data();
+          const role = userData?.role || 'citizen';
+          const department = userData?.department || null;
+          
+          setUserRole(role);
+          setUserDepartment(department);
+          setUser({ ...firebaseUser, role, department });
+          
+          // Store in localStorage for quick access
+          localStorage.setItem('userRole', role);
+          localStorage.setItem('userDepartment', department || '');
+          localStorage.setItem('userEmail', firebaseUser.email);
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          setUserRole('citizen');
+          setUser({ ...firebaseUser, role: 'citizen' });
+        }
+      } else {
+        setUser(null);
+        setUserRole(null);
+        setUserDepartment(null);
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userDepartment');
+        localStorage.removeItem('userEmail');
+      }
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  const registerWithEmail = async (name, email, password, role = 'citizen', department = null) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      await updateProfile(user, { displayName: name });
+      
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        name,
+        email,
+        role,
+        department,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=2563eb&color=fff`,
+        createdAt: new Date().toISOString(),
+        stats: {
+          complaintsFiled: 0,
+          complaintsResolved: 0,
+          upvotesReceived: 0,
+          forumPosts: 0
+        }
+      });
+      
+      setUserRole(role);
+      setUserDepartment(department);
+      localStorage.setItem('userRole', role);
+      localStorage.setItem('userDepartment', department || '');
+      toast.success('Account created successfully!');
+      return { user, role };
+    } catch (error) {
+      toast.error(error.message);
+      throw error;
+    }
+  };
+
+  const loginWithEmail = async (email, password, selectedRole) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Fetch user role from Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDoc.data();
+      const actualRole = userData?.role || 'citizen';
+      const department = userData?.department || null;
+      
+      // Verify role matches selected role
+      if (selectedRole && actualRole !== selectedRole) {
+        toast.error(`This account is registered as a ${actualRole}. Please select the correct role.`);
+        await signOut(auth);
+        throw new Error(`Role mismatch: Expected ${selectedRole}, got ${actualRole}`);
+      }
+      
+      setUserRole(actualRole);
+      setUserDepartment(department);
+      setUser({ ...user, role: actualRole, department });
+      
+      localStorage.setItem('userRole', actualRole);
+      localStorage.setItem('userDepartment', department || '');
+      localStorage.setItem('userEmail', user.email);
+      
+      toast.success(`Welcome back, ${user.displayName || user.email}!`);
+      return { user, role: actualRole, department };
+    } catch (error) {
+      toast.error(error.message);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      setUserRole(null);
+      setUserDepartment(null);
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userDepartment');
+      localStorage.removeItem('userEmail');
+      toast.success('Logged out successfully');
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const updateUserRole = async (userId, newRole, newDepartment = null) => {
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        role: newRole,
+        department: newDepartment,
+        updatedAt: new Date().toISOString()
+      });
+      if (user && user.uid === userId) {
+        setUserRole(newRole);
+        setUserDepartment(newDepartment);
+        localStorage.setItem('userRole', newRole);
+        localStorage.setItem('userDepartment', newDepartment || '');
+      }
+      toast.success('User role updated');
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const value = {
+    user,
+    userRole,
+    userDepartment,
+    loading,
+    registerWithEmail,
+    loginWithEmail,
+    logout,
+    updateUserRole
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
+};

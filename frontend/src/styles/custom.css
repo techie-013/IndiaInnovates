@@ -1,0 +1,25 @@
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fadeIn 0.5s ease-out; }
+
+@keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+.animate-slide-in { animation: slideIn 0.3s ease-out; }
+
+/* Status badges */
+.status-badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
+.status-pending { background-color: #f3f4f6; color: #4b5563; }
+.status-assigned { background-color: #dbeafe; color: #1e40af; }
+.status-in-progress { background-color: #fef3c7; color: #b45309; }
+.status-resolved { background-color: #d1fae5; color: #065f46; }
+.status-rejected { background-color: #fee2e2; color: #991b1b; }
+
+/* Priority badges */
+.priority-high { background-color: #fee2e2; color: #dc2626; }
+.priority-medium { background-color: #fef3c7; color: #d97706; }
+.priority-low { background-color: #d1fae5; color: #059669; }

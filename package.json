@@ -1,0 +1,16 @@
+{
+  "name": "civiclens",
+  "version": "1.0.0",
+  "description": "Digital Democracy Platform - Civic Grievance System",
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "preview": "cd frontend && npm run preview",
+    "firebase:serve": "firebase emulators:start",
+    "firebase:deploy": "firebase deploy"
+  },
+  "keywords": ["civic", "grievance", "democracy", "ai", "firebase"],
+  "author": "The Garuds",
+  "license": "MIT"
+}
